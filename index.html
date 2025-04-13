@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌟 Habit Tracker 🌟</title>
+  <style>
+    :root {
+      --bg-light: #fef6ff;
+      --bg-dark: #1a1a2e;
+      --text-light: #333;
+      --text-dark: #eee;
+      --primary: #ff80ab;
+      --accent: #a0e7e5;
+      --badge: #caffbf;
+    }
+
+    body.light {
+      background: var(--bg-light);
+      color: var(--text-light);
+    }
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary);
+    }
+
+    #themeToggle {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 6px 10px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #quote {
+      text-align: center;
+      font-style: italic;
+      margin: 30px 0 10px;
+    }
+
+    .habit {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .habit-name {
+      font-weight: bold;
+      font-size: 1.3em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .streak {
+      font-size: 0.9em;
+      color: var(--accent);
+      margin: 5px 0;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--badge);
+      color: #2d6a4f;
+      font-size: 0.8em;
+      padding: 5px 10px;
+      border-radius: 20px;
+      margin-left: 10px;
+    }
+
+    .days {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .day {
+      width: 30px;
+      height: 30px;
+      background: #eee;
+      text-align: center;
+      line-height: 30px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .checked {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+    }
+
+    #newHabitForm {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    input[type="text"], input[type="password"] {
+      padding: 8px;
+      width: 200px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 8px 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .delete-btn {
+      background: #e74c3c;
+      padding: 5px 10px;
+      font-size: 0.8em;
+      margin-left: 10px;
+    }
+
+    #loginScreen {
+      text-align: center;
+      margin-top: 100px;
+    }
+
+    #logoutBtn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #f39c12;
+    }
+
+    #dashboard {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body class="light">
+  <button id="themeToggle">🌙</button>
+
+  <div id="loginScreen">
+    <h1>Login to Habit Tracker</h1>
+    <input type="text" id="username" placeholder="Username (e.g., Lion)">
+    <input type="password" id="password" placeholder="Password (e.g., Blue)">
+    <br>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+    <h1>🌟 Habit Tracker 🌟</h1>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+    <div id="dashboard"></div>
+    <div id="quote"></div>
+    <div id="newHabitForm">
+      <input type="text" id="habitInput" placeholder="New Habit (with emoji!)" />
+      <button onclick="addHabit()">Add Habit</button>
+    </div>
+    <div id="habitList"></div>
+  </div>
+
+  <script>
+    const quotes = [
+      "Progress over perfection. One day at a time.",
+      "Small steps every day lead to big results.",
+      "You’re doing better than you think!",
+      "Your future self will thank you.",
+      "Stay consistent, not perfect.",
+      "Be proud of every checkmark you make.",
+    ];
+
+    const users = {
+      lion: "blue",
+      panda: "pink",
+      tiger: "red",
+      bunny: "purple",
+      fox: "orange",
+      owl: "grey",
+      cat: "yellow",
+      wolf: "white",
+      koala: "green",
+      dolphin: "aqua",
+      bear: "brown"
+    };
+
+    let currentUser = null;
+    let habits = [];
+
+    document.getElementById("themeToggle").onclick = function () {
+      document.body.classList.toggle("dark");
+      document.body.classList.toggle("light");
+      this.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
+
+    function login() {
+      const user = document.getElementById("username").value.trim().toLowerCase();
+      const pass = document.getElementById("password").value.trim().toLowerCase();
+      if (users[user] && users[user] === pass) {
+        currentUser = user;
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        document.getElementById("quote").innerText = quotes[Math.floor(Math.random() * quotes.length)];
+        habits = JSON.parse(localStorage.getItem("habits_" + currentUser) || "[]");
+        habits.forEach(updateStreaks);
+        renderHabits();
+      } else {
+        alert("Wrong username or password.");
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById("mainApp").style.display = "none";
+      document.getElementById("loginScreen").style.display = "block";
+    }
+
+    function saveHabits() {
+      localStorage.setItem("habits_" + currentUser, JSON.stringify(habits));
+    }
+
+    function toggleDay(habitIndex, dayIndex) {
+      const habit = habits[habitIndex];
+      habit.days[dayIndex] = !habit.days[dayIndex];
+      updateStreaks(habit);
+      saveHabits();
+      renderHabits();
+    }
+
+    function updateStreaks(habit) {
+      let current = 0;
+      let max = 0;
+      for (let i = 0; i < habit.days.length; i++) {
+        if (habit.days[i]) {
+          current++;
+          if (current > max) max = current;
+        } else {
+          current = 0;
+        }
+      }
+      habit.currentStreak = current;
+      habit.longestStreak = max;
+    }
+
+    function addHabit() {
+      const name = document.getElementById("habitInput").value.trim();
+      if (name) {
+        const newHabit = {
+          name,
+          days: Array(30).fill(false),
+          currentStreak: 0,
+          longestStreak: 0
+        };
+        habits.push(newHabit);
+        saveHabits();
+        renderHabits();
+        document.getElementById("habitInput").value = "";
+      }
+    }
+
+    function deleteHabit(index) {
+      if (confirm("Delete this habit?")) {
+        habits.splice(index, 1);
+        saveHabits();
+        renderHabits();
+      }
+    }
+
+    function renderHabits() {
+      const list = document.getElementById("habitList");
+      list.innerHTML = "";
+      habits.forEach((habit, i) => {
+        const div = document.createElement("div");
+        div.className = "habit";
+
+        const name = document.createElement("div");
+        name.className = "habit-name";
+        name.innerHTML = `${habit.name}
+          <span>
+            ${habit.currentStreak === 30 ? '<span class="badge">🏅 Completed!</span>' : ""}
+            <button class="delete-btn" onclick="deleteHabit(${i})">🗑️</button>
+          </span>`;
+
+        const streak = document.createElement("div");
+        streak.className = "streak";
+        streak.innerText = `🔥 Current Streak: ${habit.currentStreak} | 🏆 Longest: ${habit.longestStreak}`;
+
+        const days = document.createElement("div");
+        days.className = "days";
+
+        for (let d = 0; d < 30; d++) {
+          const day = document.createElement("div");
+          day.className = "day" + (habit.days[d] ? " checked" : "");
+          day.innerText = d + 1;
+          day.onclick = () => toggleDay(i, d);
+          days.appendChild(day);
+        }
+
+        div.appendChild(name);
+        div.appendChild(streak);
+        div.appendChild(days);
+        list.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
